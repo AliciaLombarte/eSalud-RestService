@@ -1,0 +1,10 @@
+Manifest-Version: 1.0
+Implementation-Title: AppService
+Implementation-Version: 0.0.1-SNAPSHOT
+Built-By: alicialombarte
+Implementation-Vendor-Id: com.eSalud.project
+Build-Jdk: 1.8.0_144
+Implementation-URL: http://projects.spring.io/spring-boot/MavenWebApp/
+Created-By: Maven Integration for Eclipse
+Implementation-Vendor: Pivotal Software, Inc.
+
