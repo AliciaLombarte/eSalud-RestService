@@ -11,12 +11,15 @@ import java.sql.SQLWarning;
 import java.sql.Statement;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 import eSalud.domains.Cuestionario;
 import eSalud.domains.Doctor;
@@ -655,8 +658,7 @@ public class UserDB {
 
 			Statement myStatement = conexion.createStatement();
 
-			ResultSet rs = myStatement
-					.executeQuery("SELECT protocolo, cuestionario, frecuencia FROM test_tfg.PROTOCOLS;");
+			ResultSet rs = myStatement.executeQuery("SELECT protocolo, frecuencia FROM test_tfg.PROTOCOLS;");
 
 			ArrayList<Protocolo> pL = new ArrayList<Protocolo>();
 
@@ -664,7 +666,6 @@ public class UserDB {
 				while (rs.next()) {
 					Protocolo p = new Protocolo();
 					p.setNombre(rs.getString("protocolo"));
-					p.setCuestionario(rs.getString("cuestionario"));
 					p.setFrecuencia(rs.getInt("frecuencia"));
 					pL.add(p);
 				}
@@ -961,7 +962,7 @@ public class UserDB {
 
 	@SuppressWarnings("finally")
 	public ArrayList<String> getQUESTIONNAIRES(String table, String protocolo, String atribute,
-			ArrayList<String> questionnairesList) {
+			ArrayList<String> questionnairesList, int frecuencia, String email) {
 
 		String userName = InformacionProperties.getStrUser();
 		String password = InformacionProperties.getStrPassword();
@@ -979,12 +980,21 @@ public class UserDB {
 			Date fecha = new Date();
 			dateFormat.format(fecha);
 
+			
 			ResultSet rs = myStatement.executeQuery(
 					"SELECT " + atribute + " FROM test_tfg." + table + " WHERE protocol='" + protocolo + "';");
 
 			if (rs != null) {
 				while (rs.next()) {
-					questionnairesList.add(rs.getString(atribute));
+					
+					if (!questionnairesList.contains(rs.getString(atribute))) {
+						Date lastDoneDate = getLastDoneDate("QUESTIONNAIRE_RESPONSE", "date", email,
+								rs.getString(atribute));
+						toBeDone(fecha.getTime(), lastDoneDate.getTime(), frecuencia);
+						if (toBeDone(fecha.getTime(), lastDoneDate.getTime(), frecuencia)) {
+							questionnairesList.add(rs.getString(atribute));
+						}					
+					}
 				}
 			}
 
@@ -1009,6 +1019,67 @@ public class UserDB {
 			}
 		} finally {
 			return questionnairesList;
+		}
+	}
+
+	private boolean toBeDone(long fechaHoy, long fechaUltimaRealizacion, int frecuencia) {
+		try {
+			long diffTime = fechaHoy - fechaUltimaRealizacion;
+			long diffDays = diffTime / (1000 * 60 * 60 * 24);
+			System.out.println("The difference "+
+			  diffDays+" days.");
+			System.out.println(frecuencia == diffDays);
+			return frecuencia == diffDays;
+		} catch (Exception e) {
+System.out.println(e);		}
+		return false;
+	
+	}
+
+	private Date getLastDoneDate(String table, String atribute, String email, String questionnaire) {
+		String userName = InformacionProperties.getStrUser();
+		String password = InformacionProperties.getStrPassword();
+		String url = "jdbc:mysql://localhost/" + InformacionProperties.getStrDatabaseName() + "?user=" + userName
+				+ "&password=" + password + "&useSSL=false";
+		Date date = new Date(0);
+		try {
+			Class.forName(InformacionProperties.getStrClassDriver());
+
+			Connection conexion = DriverManager.getConnection(url);
+
+			Statement myStatement = conexion.createStatement();
+
+			ResultSet rs = myStatement.executeQuery("SELECT " + atribute + " FROM test_tfg." + table
+					+ " WHERE questionnaire='" + questionnaire + "' AND emailUser=AES_ENCRYPT('" + email
+					+ "',UNHEX('F3229A0B371ED2D9441B830D21A390C3')) ORDER BY '" + atribute + "' DESC;");
+
+			if (rs != null) {
+				while (rs.next()) {
+					date = rs.getDate(atribute);
+				}
+			}
+
+			myStatement.close();
+			conexion.close();
+
+		} catch (ClassNotFoundException e) {
+			System.out.println(e);
+		} catch (SQLWarning sqlWarning) {
+			while (sqlWarning != null) {
+				System.out.println("Error: " + sqlWarning.getErrorCode());
+				System.out.println("Descripcion: " + sqlWarning.getMessage());
+				System.out.println("SQLstate: " + sqlWarning.getSQLState());
+				sqlWarning = sqlWarning.getNextWarning();
+			}
+		} catch (SQLException sqlException) {
+			while (sqlException != null) {
+				System.out.println("Error: " + sqlException.getErrorCode());
+				System.out.println("Descripcion: " + sqlException.getMessage());
+				System.out.println("SQLstate: " + sqlException.getSQLState());
+				sqlException = sqlException.getNextException();
+			}
+		} finally {
+			return date;
 		}
 	}
 
@@ -1179,4 +1250,53 @@ public class UserDB {
 			return image;
 		}
 	}
+
+	@SuppressWarnings("finally")
+	public int getFrecuenciaProtocolo(String table, String protocolo, String atribute) {
+		String userName = InformacionProperties.getStrUser();
+		String password = InformacionProperties.getStrPassword();
+		String url = "jdbc:mysql://localhost/" + InformacionProperties.getStrDatabaseName() + "?user=" + userName
+				+ "&password=" + password + "&useSSL=false";
+		int frecuencia = 0;
+
+		try {
+			Class.forName(InformacionProperties.getStrClassDriver());
+
+			Connection conexion = DriverManager.getConnection(url);
+
+			Statement myStatement = conexion.createStatement();
+
+			ResultSet rs = myStatement.executeQuery(
+					"SELECT " + atribute + " FROM test_tfg." + table + " WHERE protocolo='" + protocolo + "';");
+
+			if (rs != null) {
+				while (rs.next()) {
+					frecuencia = rs.getInt(atribute);
+				}
+			}
+
+			myStatement.close();
+			conexion.close();
+
+		} catch (ClassNotFoundException e) {
+			System.out.println(e);
+		} catch (SQLWarning sqlWarning) {
+			while (sqlWarning != null) {
+				System.out.println("Error: " + sqlWarning.getErrorCode());
+				System.out.println("Descripcion: " + sqlWarning.getMessage());
+				System.out.println("SQLstate: " + sqlWarning.getSQLState());
+				sqlWarning = sqlWarning.getNextWarning();
+			}
+		} catch (SQLException sqlException) {
+			while (sqlException != null) {
+				System.out.println("Error: " + sqlException.getErrorCode());
+				System.out.println("Descripcion: " + sqlException.getMessage());
+				System.out.println("SQLstate: " + sqlException.getSQLState());
+				sqlException = sqlException.getNextException();
+			}
+		} finally {
+			return frecuencia;
+		}
+	}
+
 }

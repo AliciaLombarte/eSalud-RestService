@@ -169,13 +169,15 @@ public class Controller {
 		protocoloList = database.get("PROTOCOLS_USERS", email, "nombre");
 		ArrayList<String> questionnaireList = new ArrayList<String>();
 		for (String protocolo : protocoloList) {
+			int frecuencia = database.getFrecuenciaProtocolo("PROTOCOLS", protocolo, "frecuencia");
 			questionnaireList = database.getQUESTIONNAIRES("PROTOCOLS_QUESTIONNAIRES", protocolo, "questionnaire",
-					questionnaireList);
+					questionnaireList, frecuencia, email);
+			System.out.println(protocolo + frecuencia + questionnaireList);
 		}
-		questionnaireDoneList = database.getQuestionnaireDone(email);
-		if (!questionnaireDoneList.isEmpty()) {
-			questionnaireList = database.getDifferenceBetweenTwoArray(questionnaireList, questionnaireDoneList);
-		}
+		// questionnaireDoneList = database.getQuestionnaireDone(email);
+		//if (!questionnaireDoneList.isEmpty()) {
+		//	questionnaireList = database.getDifferenceBetweenTwoArray(questionnaireList, questionnaireDoneList);
+		//}
 		return questionnaireList;
 	}
 
@@ -184,11 +186,8 @@ public class Controller {
 
 		UserDB database = new UserDB();
 		ListProtocolo listProtocolos = new ListProtocolo();
-
 		listProtocolos = database.getProtocolos();
-
 		return listProtocolos;
-
 	}
 
 	@RequestMapping(value = "protocol", method = RequestMethod.POST, produces = "application/json")
@@ -224,19 +223,20 @@ public class Controller {
 
 	}
 
-	@RequestMapping(value = "infoUser", method = RequestMethod.GET, produces = "application/json")
-	public ListWounds infoPaciente(@RequestParam("email") String email) {
-
+	@RequestMapping(value = "infoUser", method = RequestMethod.POST, produces = "application/json")
+	public ListWounds infoPaciente(@RequestBody User user) {
+		
 		UserDB database = new UserDB();
+		String email = user.getEmail();
 		ArrayList<WoundTracks> list = database.infoPaciente(email);
-
 		String nombre = database.findNameByEmail(email);
+		
 		ListWounds listwounds = new ListWounds();
 		listwounds.setList(list);
 		listwounds.setNombre(nombre);
-
+		
 		return listwounds;
-
+		
 	}
 
 	@RequestMapping(value = "getWoundtrackImage", method = RequestMethod.GET, produces = "application/json")
