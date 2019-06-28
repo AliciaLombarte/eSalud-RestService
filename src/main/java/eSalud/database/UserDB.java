@@ -1,7 +1,5 @@
 package eSalud.database;
 
-import java.io.InputStream;
-import java.sql.Blob;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -11,16 +9,11 @@ import java.sql.SQLWarning;
 import java.sql.Statement;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.TimeUnit;
-
 import eSalud.domains.Cuestionario;
 import eSalud.domains.Doctor;
 import eSalud.domains.ListCuestionario;
@@ -980,20 +973,19 @@ public class UserDB {
 			Date fecha = new Date();
 			dateFormat.format(fecha);
 
-			
 			ResultSet rs = myStatement.executeQuery(
 					"SELECT " + atribute + " FROM test_tfg." + table + " WHERE protocol='" + protocolo + "';");
 
 			if (rs != null) {
 				while (rs.next()) {
-					
+
 					if (!questionnairesList.contains(rs.getString(atribute))) {
 						Date lastDoneDate = getLastDoneDate("QUESTIONNAIRE_RESPONSE", "date", email,
 								rs.getString(atribute));
 						toBeDone(fecha.getTime(), lastDoneDate.getTime(), frecuencia);
 						if (toBeDone(fecha.getTime(), lastDoneDate.getTime(), frecuencia)) {
 							questionnairesList.add(rs.getString(atribute));
-						}					
+						}
 					}
 				}
 			}
@@ -1026,14 +1018,12 @@ public class UserDB {
 		try {
 			long diffTime = fechaHoy - fechaUltimaRealizacion;
 			long diffDays = diffTime / (1000 * 60 * 60 * 24);
-			System.out.println("The difference "+
-			  diffDays+" days.");
-			System.out.println(frecuencia == diffDays);
-			return frecuencia == diffDays;
+			return diffDays >= frecuencia;
 		} catch (Exception e) {
-System.out.println(e);		}
+			System.out.println(e);
+		}
 		return false;
-	
+
 	}
 
 	private Date getLastDoneDate(String table, String atribute, String email, String questionnaire) {
@@ -1200,11 +1190,6 @@ System.out.println(e);		}
 		}
 	}
 
-	public ArrayList<String> getDifferenceBetweenTwoArray(ArrayList<String> questionnaireAssigned,
-			ArrayList<String> questionnaireDoneList) {
-		questionnaireAssigned.removeAll(questionnaireDoneList);
-		return questionnaireAssigned;
-	}
 
 	public String getImage(String img) {
 		String userName = InformacionProperties.getStrUser();

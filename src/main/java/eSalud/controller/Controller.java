@@ -50,7 +50,6 @@ public class Controller {
 
 	@RequestMapping(value = "logout", method = RequestMethod.POST, produces = "application/json")
 	public Result logOut() {
-		System.out.println("logout....");
 		Result res = new Result();
 		res.setResult(200);
 		return res;
@@ -165,19 +164,13 @@ public class Controller {
 	public ArrayList<String> getUserProtocols(@RequestParam("email") String email) {
 		UserDB database = new UserDB();
 		ArrayList<String> protocoloList = new ArrayList<String>();
-		ArrayList<String> questionnaireDoneList = new ArrayList<String>();
 		protocoloList = database.get("PROTOCOLS_USERS", email, "nombre");
 		ArrayList<String> questionnaireList = new ArrayList<String>();
 		for (String protocolo : protocoloList) {
 			int frecuencia = database.getFrecuenciaProtocolo("PROTOCOLS", protocolo, "frecuencia");
 			questionnaireList = database.getQUESTIONNAIRES("PROTOCOLS_QUESTIONNAIRES", protocolo, "questionnaire",
 					questionnaireList, frecuencia, email);
-			System.out.println(protocolo + frecuencia + questionnaireList);
 		}
-		// questionnaireDoneList = database.getQuestionnaireDone(email);
-		//if (!questionnaireDoneList.isEmpty()) {
-		//	questionnaireList = database.getDifferenceBetweenTwoArray(questionnaireList, questionnaireDoneList);
-		//}
 		return questionnaireList;
 	}
 
